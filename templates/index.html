@@ -1,0 +1,668 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VisionAI | Image Classifier</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: #090e1c;
+  color: #f5f7ff;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 6%;
+  border-bottom: 1px solid #252b3d;
+}
+
+.logo {
+  font-size: 25px;
+  font-weight: 800;
+  color: #a995ff;
+}
+
+.status {
+  color: #7ee0ac;
+  font-size: 13px;
+}
+
+.container {
+  width: 90%;
+  max-width: 1080px;
+  margin: 40px auto;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.hero h1 {
+  font-size: clamp(29px, 5vw, 45px);
+  margin-bottom: 10px;
+}
+
+.hero span { color: #a995ff; }
+
+.hero p { color: #a2acc5; }
+
+.dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.card {
+  background: #151c30;
+  border: 1px solid #303850;
+  border-radius: 18px;
+  padding: 25px;
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.upload-box {
+  border: 2px dashed #6257a9;
+  border-radius: 14px;
+  padding: 32px 15px;
+  text-align: center;
+  cursor: pointer;
+  background: #1c2340;
+}
+
+.upload-box.dragover {
+  border-color: #a995ff;
+  background: #292652;
+}
+
+.upload-box p { color: #a2acc5; }
+
+#preview {
+  display: block;
+  max-width: 100%;
+  max-height: 250px;
+  object-fit: contain;
+  margin: 20px auto;
+  border-radius: 12px;
+}
+
+#preview[hidden] { display: none; }
+
+button {
+  border: 0;
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 700;
+}
+
+.primary {
+  width: 100%;
+  margin-top: 14px;
+  background: linear-gradient(110deg, #7b5cf6, #4285f4);
+  color: white;
+}
+
+.primary:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.result-name {
+  font-size: 32px;
+  font-weight: 800;
+  color: #a995ff;
+  margin: 18px 0;
+}
+
+.muted { color: #a2acc5; }
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+.progress {
+  height: 12px;
+  border-radius: 12px;
+  background: #30374d;
+  overflow: hidden;
+}
+
+.bar {
+  width: 0%;
+  height: 100%;
+  border-radius: 12px;
+  transition: width .5s ease;
+}
+
+.cat-bar { background: #8c6bfa; }
+.dog-bar { background: #39b8dc; }
+
+.history {
+  margin-top: 25px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid #303850;
+}
+
+.history-item small {
+  display: block;
+  color: #a2acc5;
+  margin-top: 5px;
+}
+
+.secondary {
+  color: #f5f7ff;
+  background: #303850;
+}
+
+.history-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+footer {
+  text-align: center;
+  margin: 35px 0;
+  color: #8f99b3;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .dashboard { grid-template-columns: 1fr; }
+  .container { width: 94%; }
+  header { padding: 18px 4%; }
+}
+#comparisonSection[hidden] {
+  display: none;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">✦ VisionAI</div>
+  <div class="status">● CNN V2 Model</div>
+</header>
+
+<main class="container">
+
+  <section class="hero">
+    <h1>AI <span>Image Classifier</span></h1>
+    <p>
+      Upload an image and let our trained
+      neural network predict Cat or Dog.
+    </p>
+  </section>
+
+  <div class="dashboard">
+
+    <section class="card">
+      <h2>📷 Upload Image</h2>
+
+      <div class="upload-box" id="dropZone">
+        <div style="font-size:38px">☁️</div>
+        <h3>Drop image here</h3>
+        <p>or click to browse your files</p>
+        <p>JPG, PNG, WEBP • Max 5 MB</p>
+      </div>
+
+      <input
+        type="file"
+        id="imageInput"
+        accept="image/jpeg,image/png,image/webp"
+        hidden
+      >
+
+      <img id="preview" alt="Uploaded image" hidden>
+
+      <button class="primary" id="predictBtn">
+        Analyze Image
+      </button>
+
+<button class="primary" id="compareBtn">
+  ⚖️ Compare V1 vs V2
+</button>
+
+    </section>
+
+    <section class="card">
+      <h2>🧠 AI Prediction</h2>
+
+      <p class="muted">Model: Custom CNN V2</p>
+
+      <div class="result-name" id="prediction">
+        No prediction yet
+      </div>
+
+      <p id="confidence" class="muted">
+        Upload an image to get started.
+      </p>
+
+      <h3>Class Probabilities</h3>
+
+      <div class="progress-label">
+        <span>🐱 Cat</span>
+        <span id="catText">0%</span>
+      </div>
+
+      <div class="progress">
+        <div class="bar cat-bar" id="catBar"></div>
+      </div>
+
+      <div class="progress-label">
+        <span>🐶 Dog</span>
+        <span id="dogText">0%</span>
+      </div>
+
+      <div class="progress">
+        <div class="bar dog-bar" id="dogBar"></div>
+      </div>
+
+      <p class="muted" style="margin-top:25px">
+        Model Test Accuracy: 82.40%
+      </p>
+      <p class="muted" style="font-size:12px">
+        Confidence scores are estimates, not guarantees.
+      </p>
+    </section>
+
+  </div>
+
+<section class="card history" id="comparisonSection" hidden>
+  <h2>⚖️ CNN V1 vs V2 Comparison</h2>
+  <p class="muted">
+    Both models analyze the same uploaded image.
+  </p>
+
+  <div class="dashboard">
+
+    <div class="card">
+      <h2>CNN Version 1</h2>
+      <p class="muted">Test Accuracy: 71.20%</p>
+
+      <div class="result-name" id="v1Prediction">--</div>
+      <p id="v1Confidence">Confidence: --</p>
+
+      <div class="progress-label">
+        <span>🐱 Cat</span>
+        <span id="v1CatText">0%</span>
+      </div>
+      <div class="progress">
+        <div class="bar cat-bar" id="v1CatBar"></div>
+      </div>
+
+      <div class="progress-label">
+        <span>🐶 Dog</span>
+        <span id="v1DogText">0%</span>
+      </div>
+      <div class="progress">
+        <div class="bar dog-bar" id="v1DogBar"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>CNN Version 2</h2>
+      <p class="muted">Test Accuracy: 82.40%</p>
+
+      <div class="result-name" id="v2Prediction">--</div>
+      <p id="v2Confidence">Confidence: --</p>
+
+      <div class="progress-label">
+        <span>🐱 Cat</span>
+        <span id="v2CatText">0%</span>
+      </div>
+      <div class="progress">
+        <div class="bar cat-bar" id="v2CatBar"></div>
+      </div>
+
+      <div class="progress-label">
+        <span>🐶 Dog</span>
+        <span id="v2DogText">0%</span>
+      </div>
+      <div class="progress">
+        <div class="bar dog-bar" id="v2DogBar"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <p id="comparisonSummary" class="muted"></p>
+</section>
+
+
+  <section class="card history">
+    <div class="history-heading">
+      <h2>🕘 Prediction History</h2>
+      <button class="secondary" id="clearHistory">
+        Clear History
+      </button>
+    </div>
+
+    <div id="historyList">
+      <p class="muted">No predictions yet.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  VisionAI • Built with PyTorch, CNN and Flask
+</footer>
+
+<script>
+const input = document.getElementById("imageInput");
+const dropZone = document.getElementById("dropZone");
+const preview = document.getElementById("preview");
+const predictBtn = document.getElementById("predictBtn");
+
+const prediction = document.getElementById("prediction");
+const confidence = document.getElementById("confidence");
+const catBar = document.getElementById("catBar");
+const dogBar = document.getElementById("dogBar");
+const catText = document.getElementById("catText");
+const dogText = document.getElementById("dogText");
+
+let selectedFile = null;
+let previewUrl = null;
+
+function resetResult() {
+  prediction.textContent = "No prediction yet";
+  confidence.textContent = "Ready to analyze.";
+  catBar.style.width = "0%";
+  dogBar.style.width = "0%";
+  catText.textContent = "0%";
+  dogText.textContent = "0%";
+}
+
+function selectFile(file) {
+  if (!file) return;
+
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp"
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    alert("Please select a JPG, PNG or WEBP image.");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Image must be smaller than 5 MB.");
+    return;
+  }
+
+  selectedFile = file;
+  resetResult();
+
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+  }
+
+  previewUrl = URL.createObjectURL(file);
+  preview.src = previewUrl;
+  preview.hidden = false;
+}
+
+dropZone.addEventListener("click", () => input.click());
+
+input.addEventListener("change", () => {
+  selectFile(input.files[0]);
+});
+
+dropZone.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  dropZone.classList.add("dragover");
+});
+
+dropZone.addEventListener("dragleave", () => {
+  dropZone.classList.remove("dragover");
+});
+
+dropZone.addEventListener("drop", (event) => {
+  event.preventDefault();
+  dropZone.classList.remove("dragover");
+  selectFile(event.dataTransfer.files[0]);
+});
+
+predictBtn.addEventListener("click", async () => {
+  if (!selectedFile) {
+    alert("Please upload an image first.");
+    return;
+  }
+
+  const fileForRequest = selectedFile;
+  const formData = new FormData();
+  formData.append("image", fileForRequest);
+
+  predictBtn.disabled = true;
+  predictBtn.textContent = "Analyzing...";
+
+  try {
+    const response = await fetch("/predict", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Prediction failed");
+    }
+
+    const cat = data.probabilities.cats;
+    const dog = data.probabilities.dogs;
+
+    prediction.textContent = data.prediction.toUpperCase();
+    confidence.textContent =
+      "Confidence: " + data.confidence + "%";
+
+    catBar.style.width = cat + "%";
+    dogBar.style.width = dog + "%";
+
+    catText.textContent = cat + "%";
+    dogText.textContent = dog + "%";
+
+    saveHistory({
+      name: fileForRequest.name,
+      prediction: data.prediction,
+      confidence: data.confidence,
+      date: new Date().toLocaleString()
+    });
+
+  } catch (error) {
+    prediction.textContent = "Error";
+    confidence.textContent = error.message;
+  } finally {
+    predictBtn.disabled = false;
+    predictBtn.textContent = "Analyze Image";
+  }
+});
+
+function getHistory() {
+  try {
+    return JSON.parse(
+      localStorage.getItem("visionHistory") || "[]"
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(entry) {
+  let history = getHistory();
+
+  history.unshift(entry);
+  history = history.slice(0, 20);
+
+  localStorage.setItem(
+    "visionHistory",
+    JSON.stringify(history)
+  );
+
+  showHistory();
+}
+
+function showHistory() {
+  const container = document.getElementById("historyList");
+  const history = getHistory();
+
+  container.replaceChildren();
+
+  if (!history.length) {
+    const message = document.createElement("p");
+    message.className = "muted";
+    message.textContent = "No predictions yet.";
+    container.appendChild(message);
+    return;
+  }
+
+  history.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "history-item";
+
+    const info = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = item.name;
+
+    const date = document.createElement("small");
+    date.textContent = item.date;
+
+    info.append(name, date);
+
+    const result = document.createElement("span");
+    result.textContent =
+      item.prediction.toUpperCase() +
+      " • " + item.confidence + "%";
+
+    row.append(info, result);
+    container.appendChild(row);
+  });
+}
+
+document.getElementById("clearHistory")
+  .addEventListener("click", () => {
+    localStorage.removeItem("visionHistory");
+    showHistory();
+  });
+
+showHistory();
+
+const compareBtn = document.getElementById("compareBtn");
+const comparisonSection =
+  document.getElementById("comparisonSection");
+
+function updateModelCard(version, data) {
+  document.getElementById(
+    version + "Prediction"
+  ).textContent = data.prediction.toUpperCase();
+
+  document.getElementById(
+    version + "Confidence"
+  ).textContent = "Confidence: " + data.confidence + "%";
+
+  const cat = data.probabilities.cats;
+  const dog = data.probabilities.dogs;
+
+  document.getElementById(
+    version + "CatBar"
+  ).style.width = cat + "%";
+
+  document.getElementById(
+    version + "DogBar"
+  ).style.width = dog + "%";
+
+  document.getElementById(
+    version + "CatText"
+  ).textContent = cat + "%";
+
+  document.getElementById(
+    version + "DogText"
+  ).textContent = dog + "%";
+}
+
+compareBtn.addEventListener("click", async () => {
+  if (!selectedFile) {
+    alert("Please upload an image first.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("image", selectedFile);
+
+  compareBtn.disabled = true;
+  compareBtn.textContent = "Comparing models...";
+
+  try {
+    const response = await fetch("/compare", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Comparison failed");
+    }
+
+    updateModelCard("v1", data.v1);
+    updateModelCard("v2", data.v2);
+
+    comparisonSection.hidden = false;
+
+    const samePrediction =
+      data.v1.prediction === data.v2.prediction;
+
+    document.getElementById(
+      "comparisonSummary"
+    ).textContent = samePrediction
+      ? "Both models predicted the same class. " +
+        "V2 has +11.20 percentage points higher " +
+        "overall test accuracy."
+      : "The models disagree on this image. " +
+        "V2 has better overall test accuracy, " +
+        "but the correct label needs verification.";
+
+    comparisonSection.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  } catch (error) {
+    alert("Error: " + error.message);
+  } finally {
+    compareBtn.disabled = false;
+    compareBtn.textContent = "⚖️ Compare V1 vs V2";
+  }
+});
+
+</script>
+
+</body>
+</html>

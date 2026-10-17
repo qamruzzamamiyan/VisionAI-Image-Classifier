@@ -1,0 +1,12 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.env.*
+data/
+cats_and_dogs_filtered/
+dataset.zip
+saved_models/
+results/
